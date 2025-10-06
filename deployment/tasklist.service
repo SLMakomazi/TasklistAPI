@@ -1,0 +1,24 @@
+[Unit]
+Description=Tasklist API Service
+After=network.target
+
+[Service]
+User=tasklist
+WorkingDirectory=/opt/tasklist/app
+EnvironmentFile=/opt/tasklist/config/application-prod.properties
+ExecStart=/usr/bin/java -Xms512m -Xmx1024m -jar /opt/tasklist/app/tasklist-api.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/tasklist/logs/application.log
+StandardError=append:/opt/tasklist/logs/error.log
+
+# Security options
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+ProtectHome=true
+ReadWritePaths=/opt/tasklist/logs/
+
+[Install]
+WantedBy=multi-user.target

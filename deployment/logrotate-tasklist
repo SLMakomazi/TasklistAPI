@@ -1,0 +1,13 @@
+/opt/tasklist/logs/*.log {
+    daily
+    rotate 14
+    missingok
+    compress
+    delaycompress
+    notifempty
+    create 0640 tasklist tasklist
+    sharedscripts
+    postrotate
+        systemctl reload tasklist > /dev/null 2>&1 || true
+    endscript
+}
