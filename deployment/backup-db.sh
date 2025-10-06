@@ -4,44 +4,33 @@
 
 set -e
 
-DB_HOST=$1
-DB_USER=$2
-DB_NAME=$3
-BACKUP_DIR=${4:-/opt/tasklist/backup}
+DB_HOST=${1:-localhost}
+DB_USER=${2:-postgres}
+DB_NAME=${3:-tasklist}
+BACKUP_DIR=${4:-/opt/tasklist/backups}
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ]; then
-    echo "Usage: $0 <db-host> <db-user> <db-name> [backup-dir]"
-    exit 1
-fi
-
-# Ensure backup directory exists
+# Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
-# Set filename with timestamp
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/${DB_NAME}_backup_${TIMESTAMP}.sql"
+# Set PGPASSWORD from environment or prompt
+if [ -z "$PGPASSWORD" ]; then
+    echo -n "Enter database password: "
+    read -s PGPASSWORD
+    echo
+    export PGPASSWORD
+fi
 
-# Read password securely
-read -s -p "Enter database password for $DB_USER: " DB_PASSWORD
-echo ""
+# Create backup
+echo "Creating backup of $DB_NAME database..."
+pg_dump -h "$DB_HOST" -U "$DB_USER" -F c -b -v -f "$BACKUP_DIR/${DB_NAME}_backup_${TIMESTAMP}.dump" "$DB_NAME"
 
-echo "📦 Creating database backup of $DB_NAME to $BACKUP_FILE..."
-
-# Create the backup
-PGPASSWORD="$DB_PASSWORD" pg_dump -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -F c -f "$BACKUP_FILE"
-
+# Verify backup
 if [ $? -eq 0 ]; then
-    # Set proper permissions
-    chmod 600 "$BACKUP_FILE"
-    
-    # Keep only the last 7 backups
-    (cd "$BACKUP_DIR" && ls -tp ${DB_NAME}_backup_*.sql | grep -v '/$' | tail -n +8 | xargs -I {} rm -- {})
-    
-    echo "✅ Backup completed successfully: $BACKUP_FILE"
-    echo "📊 Backup size: $(du -h "$BACKUP_FILE" | cut -f1)"
-    echo "💾 Latest backups:"
-    ls -lth "$BACKUP_DIR"/${DB_NAME}_backup_*.sql | head -5
+    echo "Backup completed successfully: $BACKUP_DIR/${DB_NAME}_backup_${TIMESTAMP}.dump"
+    # Keep last 7 days of backups
+    find "$BACKUP_DIR" -name "${DB_NAME}_backup_*.dump" -type f -mtime +7 -delete
 else
-    echo "❌ Backup failed!"
+    echo "Backup failed!"
     exit 1
 fi

@@ -39,10 +39,11 @@ public class TaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + id));
         if (!task.isCompleted()) {
             task.setCompleted(true);
+            repository.save(task); // Explicitly save to ensure persistence
             log.info("Marked task id={} as completed", id);
         } else {
             log.info("Task id={} already completed", id);
         }
-        return task; // JPA dirty checking will persist change
+        return task;
     }
 }
