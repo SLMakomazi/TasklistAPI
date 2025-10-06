@@ -1,9 +1,9 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   profiles:
-    active: prod
+    active: ${SPRING_PROFILES_ACTIVE:prod}
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tasklist}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -38,7 +38,7 @@ spring:
     activate:
       on-profile: test
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -47,6 +47,10 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
   h2:
     console:
       enabled: true
@@ -78,6 +82,10 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+
+# Server configuration for prod profile
+server:
+  port: ${SERVER_PORT:8081}
 
 logging:
   level:
